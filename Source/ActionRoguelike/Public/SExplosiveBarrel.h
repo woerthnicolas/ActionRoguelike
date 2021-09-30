@@ -25,7 +25,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* StaticMeshComp;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	URadialForceComponent* RadialForceComp;
 
 public:	
