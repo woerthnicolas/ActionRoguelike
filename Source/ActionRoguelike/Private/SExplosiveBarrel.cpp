@@ -3,6 +3,7 @@
 
 #include "SExplosiveBarrel.h"
 
+#include "DrawDebugHelpers.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 
 // Sets default values
@@ -52,6 +53,10 @@ void ASExplosiveBarrel::OnActorHit(UPrimitiveComponent* HitComp, AActor* OtherAc
                                    FVector NormalImpulse, const FHitResult& Hit)
 {
 	RadialForceComp->FireImpulse();
+
+	FString CombinedString = FString::Printf(TEXT("Hit at location : %s"), *Hit.ImpactPoint.ToString());
+	
+	DrawDebugString(GetWorld(), Hit.ImpactPoint, CombinedString, nullptr, FColor::Red, 2.0f, true);
 }
 
 
