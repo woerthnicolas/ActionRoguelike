@@ -22,9 +22,14 @@ protected:
 	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> MagicProjectile;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
 
 	FTimerHandle TimerHandle_PrimaryAttack;
+	
+	FTimerHandle TimerHandle_PrimaryAction;
 public:
 	// Sets default values for this character's properties
 	ASCharacter();
@@ -48,9 +53,11 @@ protected:
 	void PrimaryAttack();
 	void PrimaryInteract();
 	void PrimaryAttack_TimerElapsed();
+	void PrimaryAction_TimerElapsed();
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void MagicProjectile();
+	void PrimaryAction();
+
+	FTransform GetTargetTransform();
 
 public:	
 	// Called every frame

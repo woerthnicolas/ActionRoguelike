@@ -71,6 +71,33 @@ void ASCharacter::PrimaryInteract()
 
 void ASCharacter::PrimaryAttack_TimerElapsed()
 {
+	const FTransform SpawnTM = GetTargetTransform();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Instigator = this;
+	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+}
+
+void ASCharacter::PrimaryAction_TimerElapsed()
+{
+	const FTransform SpawnTM = GetTargetTransform();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Instigator = this;
+	GetWorld()->SpawnActor<AActor>(MagicProjectile, SpawnTM, SpawnParams);
+}
+
+void ASCharacter::PrimaryAction()
+{
+	PlayAnimMontage(AttackAnim);
+
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAction_TimerElapsed, 0.2f);
+}
+
+FTransform ASCharacter::GetTargetTransform()
+{
 	FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 
 	FCollisionObjectQueryParams ObjectQueryParams;
@@ -100,7 +127,7 @@ void ASCharacter::PrimaryAttack_TimerElapsed()
 	{
 		FVector Start = CrosshairWorldPosition;
 		FVector End = CrosshairWorldPosition + (CrosshairWorldDirection * 1000.0f);
-		
+
 		FHitResult HitResult;
 		bool bHit = GetWorld()->LineTraceSingleByObjectType(
 			HitResult,
@@ -109,7 +136,7 @@ void ASCharacter::PrimaryAttack_TimerElapsed()
 			ObjectQueryParams
 		);
 		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
-		
+
 		FRotator Target;
 		if (bHit)
 		{
@@ -122,13 +149,13 @@ void ASCharacter::PrimaryAttack_TimerElapsed()
 		}
 		UE_LOG(LogTemp, Log, TEXT("Target : %s"), *Target.ToString());
 		FTransform SpawnTM = FTransform(Target, HandLocation);
-		FActorSpawnParameters SpawnParams;
+
 		UE_LOG(LogTemp, Log, TEXT("SpawnTM : %s"), *SpawnTM.ToString());
 
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnParams.Instigator = this;
-		GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+		return SpawnTM;
 	}
+
+	return FTransform();
 }
 
 // Called every frame
@@ -151,6 +178,6 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
 
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
-	PlayerInputComponent->BindAction("MagicProjectile", IE_Pressed, this, &ASCharacter::MagicProjectile);
+	PlayerInputComponent->BindAction("MagicProjectile", IE_Pressed, this, &ASCharacter::PrimaryAction);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
 }
