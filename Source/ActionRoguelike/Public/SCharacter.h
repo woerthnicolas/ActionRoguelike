@@ -49,6 +49,9 @@ protected:
 	void PrimaryInteract();
 	void PrimaryAttack_TimerElapsed();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void MagicProjectile();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
