@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SAttackComponent.h"
 #include "GameFramework/Character.h"
 #include "SCharacter.generated.h"
 
@@ -27,9 +28,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
 
-	FTimerHandle TimerHandle_PrimaryAttack;
-	
-	FTimerHandle TimerHandle_PrimaryAction;
 public:
 	// Sets default values for this character's properties
 	ASCharacter();
@@ -44,6 +42,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere)
 	USInteractionComponent* InteractionComp;
+
+	UPROPERTY(VisibleAnywhere)
+	USAttackComponent* AttackComp;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -52,13 +53,10 @@ protected:
 	void MoveRight(float Value);
 	void PrimaryAttack();
 	void PrimaryInteract();
-	void PrimaryAttack_TimerElapsed();
-	void PrimaryAction_TimerElapsed();
 
-	void PrimaryAction();
+	void PrimaryAttackExecute();
 
 	FTransform GetTargetTransform();
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

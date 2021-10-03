@@ -25,6 +25,7 @@ ASCharacter::ASCharacter()
 	CameraComp->SetupAttachment(SpringArmComp);
 
 	InteractionComp = CreateDefaultSubobject<USInteractionComponent>(TEXT("InteractionComp"));
+	AttackComp = CreateDefaultSubobject<USAttackComponent>(TEXT("AttackComp"));
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
@@ -60,8 +61,6 @@ void ASCharacter::MoveRight(float Value)
 void ASCharacter::PrimaryAttack()
 {
 	PlayAnimMontage(AttackAnim);
-
-	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimerElapsed, 0.2f);
 }
 
 void ASCharacter::PrimaryInteract()
@@ -69,31 +68,11 @@ void ASCharacter::PrimaryInteract()
 	InteractionComp->PrimaryInteract();
 }
 
-void ASCharacter::PrimaryAttack_TimerElapsed()
+void ASCharacter::PrimaryAttackExecute()
 {
-	const FTransform SpawnTM = GetTargetTransform();
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Instigator = this;
-	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
-}
-
-void ASCharacter::PrimaryAction_TimerElapsed()
-{
-	const FTransform SpawnTM = GetTargetTransform();
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Instigator = this;
-	GetWorld()->SpawnActor<AActor>(MagicProjectile, SpawnTM, SpawnParams);
-}
-
-void ASCharacter::PrimaryAction()
-{
-	PlayAnimMontage(AttackAnim);
-
-	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAction_TimerElapsed, 0.2f);
+	float Timer = AttackAnim->GetSectionLength(0);
+	FTransform StartLocation = GetTargetTransform();
+	AttackComp->PrimaryAttack(ProjectileClass, StartLocation, Timer);
 }
 
 FTransform ASCharacter::GetTargetTransform()
@@ -158,6 +137,11 @@ FTransform ASCharacter::GetTargetTransform()
 	return FTransform();
 }
 
+void ASCharacter::OnAttackAnimMontageEnded(UAnimMontage*, bool bInterrupted)
+{
+	
+}
+
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
 {
@@ -178,6 +162,5 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
 
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
-	PlayerInputComponent->BindAction("MagicProjectile", IE_Pressed, this, &ASCharacter::PrimaryAction);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
 }
