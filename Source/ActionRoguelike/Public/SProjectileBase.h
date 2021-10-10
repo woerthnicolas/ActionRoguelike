@@ -10,6 +10,8 @@ class UParticleSystem;
 class UProjectileMovementComponent;
 class USphereComponent;
 class UParticleSystemComponent;
+class USoundCue;
+class UAudioComponent;
 
 UCLASS(Abstract)
 class ACTIONROGUELIKE_API ASProjectileBase : public AActor

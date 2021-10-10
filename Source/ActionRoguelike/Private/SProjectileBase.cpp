@@ -29,7 +29,7 @@ ASProjectileBase::ASProjectileBase()
 
 void ASProjectileBase::Explode_Implementation()
 {
-	if(ensure(!IsPendingKill()))
+	if (ensure(!IsPendingKill()))
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactVFX, GetActorLocation(), GetActorRotation());
 
@@ -38,7 +38,7 @@ void ASProjectileBase::Explode_Implementation()
 }
 
 void ASProjectileBase::OnActorHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse, const FHitResult& Hit)
+                                  FVector NormalImpulse, const FHitResult& Hit)
 {
 	Explode();
 }
@@ -46,7 +46,4 @@ void ASProjectileBase::OnActorHit(UPrimitiveComponent* HitComp, AActor* OtherAct
 void ASProjectileBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	
 }
-
-
