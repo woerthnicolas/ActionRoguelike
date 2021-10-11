@@ -49,4 +49,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
 	bool ApplyHealthChange(float Delta);
 
+	FORCEINLINE
+	float GetHealth() const {return Health;}
+
+	FORCEINLINE
+	float GetMaxHealth() const {return MaxHealth;}
 };
