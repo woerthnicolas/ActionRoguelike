@@ -32,6 +32,11 @@ protected:
 	// Category = "" - display only for detail panels and blueprint context menu.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
 	float Health;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
+	float MaxHealth;
+
+	
 
 public:
 
