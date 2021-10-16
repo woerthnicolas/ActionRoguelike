@@ -8,11 +8,12 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
@@ -24,11 +25,15 @@ ASCharacter::ASCharacter()
 
 	InteractionComp = CreateDefaultSubobject<USInteractionComponent>(TEXT("InteractionComp"));
 
-	AttributeComp = CreateDefaultSubobject<USAttributeComponent>(TEXT("AttributeComp")); 
-	
+	AttributeComp = CreateDefaultSubobject<USAttributeComponent>(TEXT("AttributeComp"));
+
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	bUseControllerRotationYaw = false;	
+	bUseControllerRotationYaw = false;
+
+	AttackAnimDelay = 0.2f;
+	TimeToHitParamName = "TimeToHit";
+	HandSocketName = "Muzzle_01";
 }
 
 void ASCharacter::PostInitializeComponents()
@@ -42,8 +47,6 @@ void ASCharacter::PostInitializeComponents()
 void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	AttackAnimDelay = 0.2f;
 }
 
 void ASCharacter::MoveForward(float Value)
@@ -51,7 +54,7 @@ void ASCharacter::MoveForward(float Value)
 	FRotator ControlRot = GetControlRotation();
 	ControlRot.Pitch = 0.0f;
 	ControlRot.Roll = 0.0f;
-	
+
 	AddMovementInput(ControlRot.Vector(), Value);
 }
 
@@ -62,7 +65,7 @@ void ASCharacter::MoveRight(float Value)
 	ControlRot.Roll = 0.0f;
 
 	FVector RightVector = FRotationMatrix(ControlRot).GetScaledAxis(EAxis::Y);
-	
+
 	AddMovementInput(RightVector, Value);
 }
 
@@ -73,23 +76,33 @@ void ASCharacter::PrimaryInteract()
 
 void ASCharacter::Dash()
 {
-	PlayAnimMontage(AttackAnim);
+	StartAttackEffects();
 
 	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::Dash_TimeElapsed, AttackAnimDelay);
 }
 
 void ASCharacter::BlackholeAttack()
 {
-	PlayAnimMontage(AttackAnim);
+	StartAttackEffects();
 
-	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::BlackholeAttack_TimeElapsed, AttackAnimDelay);
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::BlackholeAttack_TimeElapsed,
+	                                AttackAnimDelay);
 }
 
 void ASCharacter::PrimaryAttack()
 {
+	StartAttackEffects();
+
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed,
+	                                AttackAnimDelay);
+}
+
+void ASCharacter::StartAttackEffects()
+{
 	PlayAnimMontage(AttackAnim);
 
-GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, AttackAnimDelay);}
+	UGameplayStatics::SpawnEmitterAttached(CastingEffect, GetMesh(), HandSocketName, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget);
+}
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
@@ -108,9 +121,9 @@ void ASCharacter::BlackholeAttack_TimeElapsed()
 
 void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
 {
-	if(ensureAlways(ClassToSpawn))
+	if (ensureAlways(ClassToSpawn))
 	{
-		FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+		FVector HandLocation = GetMesh()->GetSocketLocation(HandSocketName);
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -132,7 +145,7 @@ void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
 		FVector TraceEnd = CameraComp->GetComponentLocation() + (GetControlRotation().Vector() * 5000);
 
 		FHitResult Hit;
-		if(GetWorld()->SweepSingleByObjectType(Hit, TraceStart, TraceEnd, FQuat::Identity, ObjParams, Shape, Params))
+		if (GetWorld()->SweepSingleByObjectType(Hit, TraceStart, TraceEnd, FQuat::Identity, ObjParams, Shape, Params))
 		{
 			TraceEnd = Hit.ImpactPoint;
 		}
@@ -145,15 +158,19 @@ void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
 }
 
 void ASCharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth,
-	float Delta)
+                                  float Delta)
 {
-	if(NewHealth <= 0.0f && Delta < 0.0f)
+	if (Delta < 0.0f)
 	{
-		APlayerController* PC =  Cast<APlayerController>(GetController());
+		GetMesh()->SetScalarParameterValueOnMaterials(TimeToHitParamName, GetWorld()->TimeSeconds);
+	}
+	
+	if (NewHealth <= 0.0f && Delta < 0.0f)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
 		DisableInput(PC);
 	}
 }
-
 
 
 // Called every frame
@@ -174,10 +191,9 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("LookUp", this, &ASCharacter::AddControllerPitchInput);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
-	
+
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ASCharacter::Dash);
 	PlayerInputComponent->BindAction("BlackholeAttack", IE_Pressed, this, &ASCharacter::BlackholeAttack);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
 }
-

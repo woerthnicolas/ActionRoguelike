@@ -32,16 +32,23 @@ protected:
 	// Category = "" - display only for detail panels and blueprint context menu.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
 	float Health;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
+	float HealthMax;
 
 public:
-
-	UFUNCTION(BlueprintCallable)
-	bool IsAlive() const;
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnHealthChanged OnHealthChanged;
 	
-	UFUNCTION(BlueprintCallable, Category = "Attributes")
-	bool ApplyHealthChange(float Delta);
+	UFUNCTION(BlueprintCallable)
+	bool IsAlive() const;
 
+	UFUNCTION(BlueprintCallable)
+	bool ApplyHealthChange(float Delta);
+	
+	UFUNCTION(BlueprintCallable)
+	bool IsFullHealth() const;
+
+	UFUNCTION(BlueprintCallable)
+	float GetHealthMax() const;
 };
