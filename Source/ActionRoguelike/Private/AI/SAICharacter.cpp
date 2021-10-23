@@ -30,11 +30,25 @@ void ASAICharacter::PostInitializeComponents()
 
 }
 
+void ASAICharacter::SetTargetActor(AActor* NewTarget)
+{
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if(AIC)
+	{
+		AIC->GetBlackboardComponent()->SetValueAsObject("TargetActor", NewTarget);;
+	}
+}
+
 void ASAICharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth,
-	float Delta)
+                                    float Delta)
 {
 	if(Delta < 0.0f)
 	{
+		if(InstigatorActor != this)
+		{
+			SetTargetActor(InstigatorActor);
+		}
+		
 		if(NewHealth <= 0.0f)
 		{
 			//stop bt

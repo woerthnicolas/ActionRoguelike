@@ -44,7 +44,7 @@ public:
 	bool IsAlive() const;
 
 	UFUNCTION(BlueprintCallable)
-	bool ApplyHealthChange(float Delta);
+	bool ApplyHealthChange(AActor* InstigatorActor, float Delta);
 	
 	UFUNCTION(BlueprintCallable)
 	bool IsFullHealth() const;
