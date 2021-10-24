@@ -8,6 +8,7 @@
 
 class UPawnSensingComponent;
 class USAttributeComponent;
+class USWorldUserWidget;
 
 UCLASS()
 class ACTIONROGUELIKE_API ASAICharacter : public ACharacter
@@ -19,9 +20,15 @@ public:
 	ASAICharacter();
 
 protected:
-
+	
 	virtual void PostInitializeComponents() override;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<USWorldUserWidget> HealthBarWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	USWorldUserWidget* ActiveHealthBar;
+	
 	UPROPERTY(VisibleAnywhere, Category = "Effects")
 	FName TimeToHitParamName;
 
