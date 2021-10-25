@@ -22,6 +22,9 @@ public:
 
 	virtual void StartPlay() override;
 
+	UFUNCTION(Exec)
+	void KillAll();
+
 protected:
 	UFUNCTION()
 	void OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus);
