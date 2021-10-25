@@ -6,11 +6,11 @@
 #include "GameFramework/Character.h"
 #include "SCharacter.generated.h"
 
-class USpringArmComponent;
 class UCameraComponent;
+class USpringArmComponent;
 class USInteractionComponent;
-class USAttributeComponent;
 class UAnimMontage;
+class USAttributeComponent;
 class UParticleSystem;
 
 UCLASS()
@@ -26,15 +26,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Effects")
 	FName HandSocketName;
-	
+
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	TSubclassOf<AActor> DashProjectileClass;
+	TSubclassOf<AActor> BlackHoleProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	TSubclassOf<AActor> BlackholeProjectileClass;
+	TSubclassOf<AActor> DashProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
@@ -42,15 +42,11 @@ protected:
 	/* Particle System played during attack animation */
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	UParticleSystem* CastingEffect;
-	
-	FTimerHandle TimerHandle_PrimaryAttack;
-	FTimerHandle Dash_PrimaryAttack;
-	FTimerHandle BlackholeAttack_PrimaryAttack;
-public:
-	// Sets default values for this character's properties
-	ASCharacter();
 
-protected:
+	FTimerHandle TimerHandle_PrimaryAttack;
+	FTimerHandle TimerHandle_BlackholeAttack;
+	FTimerHandle TimerHandle_Dash;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Attack")
 	float AttackAnimDelay;
 
@@ -66,32 +62,38 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USAttributeComponent* AttributeComp;
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
 	void MoveForward(float Value);
+
 	void MoveRight(float Value);
+
 	void PrimaryAttack();
-	void StartAttackEffects();
-	void Dash();
-	void BlackholeAttack();
-	void PrimaryInteract();
+
 	void PrimaryAttack_TimeElapsed();
-	void Dash_TimeElapsed();
+
+	void BlackHoleAttack();
+
 	void BlackholeAttack_TimeElapsed();
 
+	void Dash();
+
+	void Dash_TimeElapsed();
+
+	void StartAttackEffects();
+
+	// Re-use spawn logic between attacks
 	void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
+
+	void PrimaryInteract();
 
 	UFUNCTION()
 	void OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta);
 
 	virtual void PostInitializeComponents() override;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+public:	
 
-	// Called to bind functionality to input
+	ASCharacter();
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(Exec)

@@ -3,41 +3,25 @@
 
 #include "SAttributeComponent.h"
 
-#include <Actor.h>
 
-// Sets default values for this component's properties
 USAttributeComponent::USAttributeComponent()
 {
 	HealthMax = 100;
 	Health = HealthMax;
 }
 
+
 bool USAttributeComponent::Kill(AActor* InstigatorActor)
 {
 	return ApplyHealthChange(InstigatorActor, -GetHealthMax());
 }
+
 
 bool USAttributeComponent::IsAlive() const
 {
 	return Health > 0.0f;
 }
 
-bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delta)
-{
-	if(!GetOwner()->CanBeDamaged())
-	{
-		return false;
-	}
-	
-	float OldHealth = Health;
-
-	Health = FMath::Clamp(Health + Delta, 0.0f, HealthMax);
-
-	float ActualDelta = Health - OldHealth;
-	OnHealthChanged.Broadcast(InstigatorActor, this, Health, ActualDelta); // @fixme: Still nullptr for InstigatorActor parameter
-
-	return ActualDelta != 0;
-}
 
 bool USAttributeComponent::IsFullHealth() const
 {
@@ -45,14 +29,38 @@ bool USAttributeComponent::IsFullHealth() const
 }
 
 
+float USAttributeComponent::GetHealth() const
+{
+	return Health;
+}
+
 float USAttributeComponent::GetHealthMax() const
 {
 	return HealthMax;
 }
 
+
+bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delta)
+{
+	if (!GetOwner()->CanBeDamaged())
+	{
+		return false;
+	}
+
+	float OldHealth = Health;
+
+	Health = FMath::Clamp(Health + Delta, 0.0f, HealthMax);
+
+	float ActualDelta = Health - OldHealth;
+	OnHealthChanged.Broadcast(InstigatorActor, this, Health, ActualDelta);
+
+	return ActualDelta != 0;
+}
+
+
 USAttributeComponent* USAttributeComponent::GetAttributes(AActor* FromActor)
 {
-	if(FromActor)
+	if (FromActor)
 	{
 		return Cast<USAttributeComponent>(FromActor->GetComponentByClass(USAttributeComponent::StaticClass()));
 	}
@@ -60,13 +68,15 @@ USAttributeComponent* USAttributeComponent::GetAttributes(AActor* FromActor)
 	return nullptr;
 }
 
+
 bool USAttributeComponent::IsActorAlive(AActor* Actor)
 {
 	USAttributeComponent* AttributeComp = GetAttributes(Actor);
-	if(AttributeComp)
+	if (AttributeComp)
 	{
 		return AttributeComp->IsAlive();
 	}
 
 	return false;
 }
+

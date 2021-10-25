@@ -17,15 +17,13 @@ UCLASS()
 class ACTIONROGUELIKE_API ASPowerup_HealthPotion : public ASPowerupActor
 {
 	GENERATED_BODY()
-
+	
 protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
-	// float healt amount?
-
-	public:
+public:
 
 	void Interact_Implementation(APawn* InstigatorPawn) override;
 

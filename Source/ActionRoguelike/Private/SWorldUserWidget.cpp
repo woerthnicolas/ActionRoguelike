@@ -2,10 +2,13 @@
 
 
 #include "SWorldUserWidget.h"
-
+#include "Kismet/GameplayStatics.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/SizeBox.h"
-#include "Kismet/GameplayStatics.h"
+
+
+
+
 
 void USWorldUserWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
@@ -15,16 +18,12 @@ void USWorldUserWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 	{
 		RemoveFromParent();
 
-		UE_LOG(LogTemp, Warning, TEXT("AttachedActor no longer valid, removing Health Widget"));
-
+		UE_LOG(LogTemp, Warning, TEXT("AttachedActor no longer valid, removing Health Widget."));
 		return;
 	}
 
 	FVector2D ScreenPosition;
-	if (UGameplayStatics::ProjectWorldToScreen(
-		GetOwningPlayer(),
-		AttachedActor->GetActorLocation() + WorldOffset,
-		ScreenPosition))
+	if (UGameplayStatics::ProjectWorldToScreen(GetOwningPlayer(), AttachedActor->GetActorLocation() + WorldOffset, ScreenPosition))
 	{
 		float Scale = UWidgetLayoutLibrary::GetViewportScale(this);
 

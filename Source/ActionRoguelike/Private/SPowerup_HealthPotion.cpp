@@ -4,6 +4,11 @@
 #include "SPowerup_HealthPotion.h"
 #include "SAttributeComponent.h"
 
+
+
+
+
+
 ASPowerup_HealthPotion::ASPowerup_HealthPotion()
 {
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>("MeshComp");
@@ -12,6 +17,7 @@ ASPowerup_HealthPotion::ASPowerup_HealthPotion()
 	MeshComp->SetupAttachment(RootComponent);
 }
 
+
 void ASPowerup_HealthPotion::Interact_Implementation(APawn* InstigatorPawn)
 {
 	if (!ensure(InstigatorPawn))
@@ -19,7 +25,7 @@ void ASPowerup_HealthPotion::Interact_Implementation(APawn* InstigatorPawn)
 		return;
 	}
 
-	USAttributeComponent* AttributeComp = Cast<USAttributeComponent>(InstigatorPawn->GetComponentByClass(USAttributeComponent::StaticClass()));
+	USAttributeComponent* AttributeComp = USAttributeComponent::GetAttributes(InstigatorPawn);
 	// Check if not already at max health
 	if (ensure(AttributeComp) && !AttributeComp->IsFullHealth())
 	{

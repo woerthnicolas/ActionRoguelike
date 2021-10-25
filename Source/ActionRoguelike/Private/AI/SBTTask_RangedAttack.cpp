@@ -2,22 +2,21 @@
 
 
 #include "AI/SBTTask_RangedAttack.h"
-
 #include "AIController.h"
-#include "SAttributeComponent.h"
-#include "Async/IAsyncTask.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Character.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "SAttributeComponent.h"
+
+
 
 USBTTask_RangedAttack::USBTTask_RangedAttack()
 {
 	MaxBulletSpread = 2.0f;
 }
 
+
 EBTNodeResult::Type USBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// return Super::ExecuteTask(OwnerComp, NodeMemory);
-
 	AAIController* MyController = OwnerComp.GetAIOwner();
 	if (ensure(MyController))
 	{
@@ -27,22 +26,22 @@ EBTNodeResult::Type USBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& O
 			return EBTNodeResult::Failed;
 		}
 
-		FVector MuzzleLocation = MyPawn->GetMesh()->GetSocketLocation("Muzzle_01");
-
 		AActor* TargetActor = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject("TargetActor"));
 		if (TargetActor == nullptr)
 		{
 			return EBTNodeResult::Failed;
 		}
 
-		if(!USAttributeComponent::IsActorAlive(TargetActor))
+		if (!USAttributeComponent::IsActorAlive(TargetActor))
 		{
 			return EBTNodeResult::Failed;
 		}
 
+		FVector MuzzleLocation = MyPawn->GetMesh()->GetSocketLocation("Muzzle_01");
 		FVector Direction = TargetActor->GetActorLocation() - MuzzleLocation;
 		FRotator MuzzleRotation = Direction.Rotation();
 
+		// Ignore negative pitch to not hit the floor in front itself
 		MuzzleRotation.Pitch += FMath::RandRange(0.0f, MaxBulletSpread);
 		MuzzleRotation.Yaw += FMath::RandRange(-MaxBulletSpread, MaxBulletSpread);
 
@@ -57,4 +56,3 @@ EBTNodeResult::Type USBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& O
 
 	return EBTNodeResult::Failed;
 }
-
