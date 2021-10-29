@@ -23,9 +23,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Credits")
+	float Cost = 4;
+
 public:
 
 	void Interact_Implementation(APawn* InstigatorPawn) override;
 
 	ASPowerup_HealthPotion();
+	
 };

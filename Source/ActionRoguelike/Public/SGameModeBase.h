@@ -55,8 +55,8 @@ public:
 	UFUNCTION(Exec)
 	void KillAll();
 
-public:
+protected:
 
-	UPROPERTY(BlueprintReadWrite, Category = "Credits")
+	UPROPERTY(EditDefaultsOnly, Category = "Credits")
 	float MinionsKilledCredits = 2;
 };

@@ -13,6 +13,7 @@ bool ASPlayerState::AddCredits(float Delta)
 	}
 
 	Credits += Delta;
+	Credits = FMath::Clamp(Credits, 0.0f, 10000.0f);
 	UE_LOG(LogTemp, Log, TEXT("AddCredits Delta : %f, Credits : %f, NewCredits : %f"), Delta, OldCredits, Credits);
 	return true;
 }

@@ -3,10 +3,7 @@
 
 #include "SPowerup_HealthPotion.h"
 #include "SAttributeComponent.h"
-
-
-
-
+#include "SPlayerState.h"
 
 
 ASPowerup_HealthPotion::ASPowerup_HealthPotion()
@@ -25,14 +22,26 @@ void ASPowerup_HealthPotion::Interact_Implementation(APawn* InstigatorPawn)
 		return;
 	}
 
-	USAttributeComponent* AttributeComp = USAttributeComponent::GetAttributes(InstigatorPawn);
-	// Check if not already at max health
-	if (ensure(AttributeComp) && !AttributeComp->IsFullHealth())
+	AController* Controller = Cast<AController>(InstigatorPawn->GetController());
+	if(Controller)
 	{
-		// Only activate if healed successfully
-		if (AttributeComp->ApplyHealthChange(this, AttributeComp->GetHealthMax()))
+		ASPlayerState* PS = Controller->GetPlayerState<ASPlayerState>();
+		if(PS)
 		{
-			HideAndCooldownPowerup();
+			if(PS->HasEnoughCredits(Cost))
+			{
+				USAttributeComponent* AttributeComp = USAttributeComponent::GetAttributes(InstigatorPawn);
+				// Check if not already at max health
+				if (ensure(AttributeComp) && !AttributeComp->IsFullHealth())
+				{
+					// Only activate if healed successfully
+					if (AttributeComp->ApplyHealthChange(this, AttributeComp->GetHealthMax()))
+					{
+						HideAndCooldownPowerup();
+						PS->AddCredits(-Cost);
+					}
+				}
+			}
 		}
 	}
 }
