@@ -54,4 +54,9 @@ public:
 
 	UFUNCTION(Exec)
 	void KillAll();
+
+public:
+
+	UPROPERTY(BlueprintReadWrite, Category = "Credits")
+	float MinionsKilledCredits = 2;
 };
