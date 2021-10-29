@@ -4,8 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "SPowerupActor.h"
-#include "SPowerup_HealthPotion.generated.h"
-
+#include "SPowerupActor_Coin.generated.h"
 
 class UStaticMeshComponent;
 
@@ -14,22 +13,20 @@ class UStaticMeshComponent;
  * 
  */
 UCLASS()
-class ACTIONROGUELIKE_API ASPowerup_HealthPotion : public ASPowerupActor
+class ACTIONROGUELIKE_API ASPowerupActor_Coin : public ASPowerupActor
 {
 	GENERATED_BODY()
-	
 protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Credits")
-	float Cost = 4.0f;
-
+	float Grants = 4.0f;
 public:
 
 	void Interact_Implementation(APawn* InstigatorPawn) override;
 
-	ASPowerup_HealthPotion();
-	
+
+	ASPowerupActor_Coin();
 };
