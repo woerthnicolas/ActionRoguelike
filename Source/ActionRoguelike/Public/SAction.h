@@ -16,6 +16,10 @@ class ACTIONROGUELIKE_API USAction : public UObject
 	GENERATED_BODY()
 
 public:
+
+	UPROPERTY(EditDefaultsOnly, Category = "Action")
+	bool bAutoStart;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Action")
 	FName ActionName;
 
