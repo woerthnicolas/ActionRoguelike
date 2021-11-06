@@ -5,13 +5,19 @@
 
 #include "SGameModeBase.h"
 
-static TAutoConsoleVariable<float> CVarDamageMultiplier(TEXT("su.DamageMultiplier"), true, TEXT("Global dmg mod for Attrib Comp"), ECVF_Cheat);
+static TAutoConsoleVariable<float> CVarDamageMultiplier(
+	TEXT("su.DamageMultiplier"), true, TEXT("Global dmg mod for Attrib Comp"), ECVF_Cheat);
 
 
 USAttributeComponent::USAttributeComponent()
 {
 	HealthMax = 100;
 	Health = HealthMax;
+
+	RageMax = 100;
+	Rage = 0;
+
+	DamageToRageRatio = 2;
 }
 
 
@@ -43,6 +49,30 @@ float USAttributeComponent::GetHealthMax() const
 	return HealthMax;
 }
 
+bool USAttributeComponent::IsFullRage() const
+{
+	return Rage == RageMax;
+}
+
+float USAttributeComponent::GetRage() const
+{
+	return Rage;
+}
+
+float USAttributeComponent::GetRageMax() const
+{
+	return RageMax;
+}
+
+float USAttributeComponent::ApplyRageCost(float Cost)
+{
+	if(Cost <= 0) return 0;
+	const float Delta = Rage - Cost;
+	Rage = FMath::Clamp(Delta, 0.0f, RageMax);
+
+	return Delta;
+}
+
 
 bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delta)
 {
@@ -51,7 +81,7 @@ bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delt
 		return false;
 	}
 
-	if(Delta < 0.0f)
+	if (Delta < 0.0f)
 	{
 		float DamageMultiplier = CVarDamageMultiplier.GetValueOnGameThread();
 
@@ -66,14 +96,20 @@ bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delt
 	OnHealthChanged.Broadcast(InstigatorActor, this, Health, ActualDelta);
 
 	// Died
-	if(ActualDelta < 0.0f && Health == 0.0f)
+	if (ActualDelta < 0.0f && Health == 0.0f)
 	{
 		ASGameModeBase* GM = GetWorld()->GetAuthGameMode<ASGameModeBase>();
-		if(GM)
+		if (GM)
 		{
 			GM->OnActorKilled(GetOwner(), InstigatorActor);
 		}
 	}
+
+	Rage = FMath::Clamp(Rage + FMath::CeilToFloat(FMath::Abs(Delta) / DamageToRageRatio), 0.0f, RageMax);
+	const FString RageMsg = FString::Printf(TEXT("Current Rage: %f"), Rage);
+	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, RageMsg);
+
+	OnRageChanged.Broadcast(InstigatorActor, this, Rage);
 
 	return ActualDelta != 0;
 }
@@ -100,4 +136,3 @@ bool USAttributeComponent::IsActorAlive(AActor* Actor)
 
 	return false;
 }
-
