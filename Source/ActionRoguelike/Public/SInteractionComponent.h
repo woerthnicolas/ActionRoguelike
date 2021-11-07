@@ -17,6 +17,13 @@ public:
 	void PrimaryInteract();
 
 protected:
+
+	// Reliable - Garanti
+	// Unreliable - Pas garanti
+	
+	UFUNCTION(Server, Reliable)
+	void ServerInteract(AActor* InFocus);
+	
 	void FindBestInteractable();
 
 	virtual void BeginPlay() override;
