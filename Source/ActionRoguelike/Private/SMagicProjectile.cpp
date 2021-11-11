@@ -2,11 +2,12 @@
 
 
 #include "SMagicProjectile.h"
-#include "SActionEffect.h"
-#include "SActionComponent.h"
-#include "SGameplayFunctionLibrary.h"
+#include "SAttributeComponent.h"
 #include "Components/SphereComponent.h"
+#include "SGameplayFunctionLibrary.h"
+#include "SActionComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "SActionEffect.h"
 
 
 ASMagicProjectile::ASMagicProjectile()
@@ -18,16 +19,13 @@ ASMagicProjectile::ASMagicProjectile()
 }
 
 
-void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                       const FHitResult& SweepResult)
+void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor && OtherActor != GetInstigator())
 	{
-		// static FGameplayTag Tag = FGameplayTag::RequestGameplayTag("Status.Parrying");
-		//
-		USActionComponent* ActionComp = Cast<USActionComponent>(
-			OtherActor->GetComponentByClass(USActionComponent::StaticClass()));
+		//static FGameplayTag Tag = FGameplayTag::RequestGameplayTag("Status.Parrying");
+
+		USActionComponent* ActionComp = Cast<USActionComponent>(OtherActor->GetComponentByClass(USActionComponent::StaticClass()));
 		if (ActionComp && ActionComp->ActiveGameplayTags.HasTag(ParryTag))
 		{
 			MoveComp->Velocity = -MoveComp->Velocity;
@@ -35,20 +33,13 @@ void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
 			SetInstigator(Cast<APawn>(OtherActor));
 			return;
 		}
-		
-		// if (AttributeComp)
-		// {
-		// 	// minus in front of DamageAmount to apply the change as damage, not healing
-		// 	AttributeComp->ApplyHealthChange(GetInstigator(), -DamageAmount);
-		// 	
-		// 	// Only explode when we hit something valid
-		// 	Explode();
-		// }
+
+		// Apply Damage & Impulse
 		if (USGameplayFunctionLibrary::ApplyDirectionalDamage(GetInstigator(), OtherActor, DamageAmount, SweepResult))
 		{
 			Explode();
 
-			if(ActionComp)
+			if (ActionComp)
 			{
 				ActionComp->AddAction(GetInstigator(), BurningActionClass);
 			}

@@ -4,6 +4,9 @@
 #include "SGameplayFunctionLibrary.h"
 #include "SAttributeComponent.h"
 
+
+
+
 bool USGameplayFunctionLibrary::ApplyDamage(AActor* DamageCauser, AActor* TargetActor, float DamageAmount)
 {
 	USAttributeComponent* AttributeComp = USAttributeComponent::GetAttributes(TargetActor);
@@ -13,6 +16,7 @@ bool USGameplayFunctionLibrary::ApplyDamage(AActor* DamageCauser, AActor* Target
 	}
 	return false;
 }
+
 
 bool USGameplayFunctionLibrary::ApplyDirectionalDamage(AActor* DamageCauser, AActor* TargetActor, float DamageAmount, const FHitResult& HitResult)
 {
