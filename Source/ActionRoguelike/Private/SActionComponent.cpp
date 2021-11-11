@@ -8,6 +8,8 @@
 USActionComponent::USActionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	SetIsReplicatedByDefault(true);
 }
 
 // Called when the game starts or when spawned
@@ -69,6 +71,11 @@ bool USActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
 				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FailedMsg);
 				continue;
 			}
+
+			if(!GetOwner()->HasAuthority())
+			{
+				ServerStartAction(Instigator, ActionName);
+			}
 			
 			Action->StartAction(Instigator);
 			return true;
@@ -95,4 +102,7 @@ bool USActionComponent::StopActionByName(AActor* Instigator, FName ActionName)
 	return false;
 }
 
-
+void USActionComponent::ServerStartAction_Implementation(AActor* Instigator, FName ActionName)
+{
+	StartActionByName(Instigator, ActionName);
+}
