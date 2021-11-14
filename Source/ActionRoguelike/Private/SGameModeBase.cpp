@@ -11,6 +11,8 @@
 #include "DrawDebugHelpers.h"
 #include "SCharacter.h"
 #include "SPlayerState.h"
+#include "SSaveGame.h"
+#include "Kismet/GameplayStatics.h"
 
 
 // Disabled by default while working on multiplayer...
@@ -27,6 +29,15 @@ ASGameModeBase::ASGameModeBase()
 	RequiredPowerupDistance = 2000;
 
 	PlayerStateClass = ASPlayerState::StaticClass();
+
+	SlotName = "SaveGame01";
+}
+
+void ASGameModeBase::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
+
+	LoadSaveGame();
 }
 
 
@@ -226,4 +237,31 @@ void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 		}
 	}
 }
+
+
+void ASGameModeBase::WriteSaveGame()
+{
+	UGameplayStatics::SaveGameToSlot(CurrentSaveGame, SlotName, 0);
+}
+
+void ASGameModeBase::LoadSaveGame()
+{
+	if(UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{
+		CurrentSaveGame = Cast<USSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
+		if(CurrentSaveGame == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to load SaveGame Data."));
+			return;
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Loaded SaveGame Data."));
+	}
+	else
+	{
+		CurrentSaveGame = Cast<USSaveGame>(UGameplayStatics::CreateSaveGameObject(USSaveGame::StaticClass()));
+		UE_LOG(LogTemp, Warning, TEXT("Created SaveGame Data."));
+	}
+}
+
 
