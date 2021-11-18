@@ -15,6 +15,7 @@
 #include "SSaveGame.h"
 #include "GameFramework/GameStateBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 
 // Disabled by default while working on multiplayer...
@@ -284,6 +285,12 @@ void ASGameModeBase::WriteSaveGame()
 		ActorData.ActorName = Actor->GetName();
 		ActorData.Transform = Actor->GetActorTransform();
 
+		FMemoryWriter MemWriter(ActorData.ByteData);
+		FObjectAndNameAsStringProxyArchive Ar(MemWriter, true);
+		Ar.ArIsSaveGame = true;
+
+		Actor->Serialize(Ar);
+
 		CurrentSaveGame->SavedActors.Add(ActorData);
 	}
 
@@ -316,6 +323,15 @@ void ASGameModeBase::LoadSaveGame()
 				if (ActorData.ActorName == Actor->GetName())
 				{
 					Actor->SetActorTransform(ActorData.Transform);
+
+					FMemoryReader MemReader(ActorData.ByteData);
+					FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
+					Ar.ArIsSaveGame = true;
+
+					Actor->Serialize(Ar);
+
+					ISGameplayInterface::Execute_OnActorLoaded(Actor);
+					
 					break;
 				}
 			}
