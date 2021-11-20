@@ -4,10 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "SActionEffect.h"
-#include "SActionComponent.h"
 #include "SActionEffect_Thorns.generated.h"
-
-class USAttributeComponent;
 
 /**
  * 

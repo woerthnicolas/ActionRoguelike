@@ -6,8 +6,7 @@
 #include "Net/UnrealNetwork.h"
 
 
-static TAutoConsoleVariable<float> CVarDamageMultiplier(
-	TEXT("su.DamageMultiplier"), 1.0f, TEXT("Global Damage Modifier for Attribute Component."), ECVF_Cheat);
+static TAutoConsoleVariable<float> CVarDamageMultiplier(TEXT("su.DamageMultiplier"), 1.0f, TEXT("Global Damage Modifier for Attribute Component."), ECVF_Cheat);
 
 
 USAttributeComponent::USAttributeComponent()
@@ -58,11 +57,6 @@ bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delt
 		return false;
 	}
 
-	// if (!GetOwner()->HasAuthority())
-	// {
-	// 	return false;
-	// }
-
 	if (Delta < 0.0f)
 	{
 		float DamageMultiplier = CVarDamageMultiplier.GetValueOnGameThread();
@@ -72,9 +66,11 @@ bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delt
 
 	float OldHealth = Health;
 	float NewHealth = FMath::Clamp(Health + Delta, 0.0f, HealthMax);
+
 	float ActualDelta = NewHealth - OldHealth;
 
-	if(GetOwner()->HasAuthority())
+	// Is Server?
+	if (GetOwner()->HasAuthority())
 	{
 		Health = NewHealth;
 
@@ -93,7 +89,7 @@ bool USAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delt
 			}
 		}
 	}
-	
+
 	return ActualDelta != 0;
 }
 
@@ -148,6 +144,11 @@ void USAttributeComponent::MulticastHealthChanged_Implementation(AActor* Instiga
 	OnHealthChanged.Broadcast(InstigatorActor, this, NewHealth, Delta);
 }
 
+void USAttributeComponent::MulticastRageChanged_Implementation(AActor* InstigatorActor, float NewRage, float Delta)
+{
+	OnRageChanged.Broadcast(InstigatorActor, this, NewRage, Delta);
+}
+
 
 void USAttributeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -155,5 +156,7 @@ void USAttributeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 	DOREPLIFETIME(USAttributeComponent, Health);
 	DOREPLIFETIME(USAttributeComponent, HealthMax);
-	//DOREPLIFETIME_CONDITION(USAttributeComponent, HealthMax, COND_InitialOnly);
+
+	DOREPLIFETIME(USAttributeComponent, Rage);
+	DOREPLIFETIME(USAttributeComponent, RageMax);
 }

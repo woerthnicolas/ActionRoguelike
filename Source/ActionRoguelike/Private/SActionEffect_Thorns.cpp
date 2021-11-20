@@ -2,8 +2,8 @@
 
 
 #include "SActionEffect_Thorns.h"
-
 #include "SAttributeComponent.h"
+#include "SActionComponent.h"
 #include "SGameplayFunctionLibrary.h"
 
 

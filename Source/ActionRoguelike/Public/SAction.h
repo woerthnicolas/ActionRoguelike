@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
 #include "GameplayTagContainer.h"
 #include "SAction.generated.h"
 
 class UWorld;
-class USActionComponent;
 
 
 USTRUCT()
@@ -16,12 +16,14 @@ struct FActionRepData
 	GENERATED_BODY()
 
 public:
+
 	UPROPERTY()
 	bool bIsRunning;
 
 	UPROPERTY()
 	AActor* Instigator;
 };
+
 
 /**
  * 
@@ -35,7 +37,7 @@ protected:
 
 	UPROPERTY(Replicated)
 	USActionComponent* ActionComp;
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	USActionComponent* GetOwningComponent() const;
 
@@ -52,8 +54,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_RepData();
-
+	
 public:
+
 	void Initialize(USActionComponent* NewActionComp);
 
 	/* Start immediately when added to an action component */
@@ -78,7 +81,7 @@ public:
 
 	UWorld* GetWorld() const override;
 
-	virtual bool IsSupportedForNetworking() const override
+	bool IsSupportedForNetworking() const override
 	{
 		return true;
 	}

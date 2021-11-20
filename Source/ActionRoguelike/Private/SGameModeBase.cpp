@@ -10,17 +10,17 @@
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
 #include "SCharacter.h"
-#include "SGameplayInterface.h"
 #include "SPlayerState.h"
 #include "SSaveGame.h"
-#include "GameFramework/GameStateBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameStateBase.h"
+#include "SGameplayInterface.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 
 // Disabled by default while working on multiplayer...
-static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), false, TEXT("Enable spawning of bots via timer."),
-                                                ECVF_Cheat);
+static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), false, TEXT("Enable spawning of bots via timer."), ECVF_Cheat);
+
 
 
 ASGameModeBase::ASGameModeBase()
@@ -36,6 +36,7 @@ ASGameModeBase::ASGameModeBase()
 	SlotName = "SaveGame01";
 }
 
+
 void ASGameModeBase::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
 {
 	Super::InitGame(MapName, Options, ErrorMessage);
@@ -50,15 +51,13 @@ void ASGameModeBase::StartPlay()
 
 	// Continuous timer to spawn in more bots.
 	// Actual amount of bots and whether its allowed to spawn determined by spawn logic later in the chain...
-	GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &ASGameModeBase::SpawnBotTimerElapsed,
-	                                SpawnTimerInterval, true);
+	GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &ASGameModeBase::SpawnBotTimerElapsed, SpawnTimerInterval, true);
 
 	// Make sure we have assigned at least one power-up class
 	if (ensure(PowerupClasses.Num() > 0))
 	{
 		// Run EQS to find potential power-up spawn locations
-		UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(
-			this, PowerupSpawnQuery, this, EEnvQueryRunMode::AllMatching, nullptr);
+		UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(this, PowerupSpawnQuery, this, EEnvQueryRunMode::AllMatching, nullptr);
 		if (ensure(QueryInstance))
 		{
 			QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &ASGameModeBase::OnPowerupSpawnQueryCompleted);
@@ -66,15 +65,17 @@ void ASGameModeBase::StartPlay()
 	}
 }
 
+
 void ASGameModeBase::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
-	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
-
+	// Calling Before Super:: so we set variables before 'beginplayingstate' is called in PlayerController (which is where we instantiate UI)
 	ASPlayerState* PS = NewPlayer->GetPlayerState<ASPlayerState>();
-	if (PS)
+	if (ensure(PS))
 	{
 		PS->LoadPlayerState(CurrentSaveGame);
 	}
+
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
 }
 
 
@@ -127,8 +128,7 @@ void ASGameModeBase::SpawnBotTimerElapsed()
 		return;
 	}
 
-	UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(
-		this, SpawnBotQuery, this, EEnvQueryRunMode::RandomBest5Pct, nullptr);
+	UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(this, SpawnBotQuery, this, EEnvQueryRunMode::RandomBest5Pct, nullptr);
 	if (ensure(QueryInstance))
 	{
 		QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &ASGameModeBase::OnBotSpawnQueryCompleted);
@@ -136,8 +136,7 @@ void ASGameModeBase::SpawnBotTimerElapsed()
 }
 
 
-void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance,
-                                              EEnvQueryStatus::Type QueryStatus)
+void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
 {
 	if (QueryStatus != EEnvQueryStatus::Success)
 	{
@@ -156,8 +155,7 @@ void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper*
 }
 
 
-void ASGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance,
-                                                  EEnvQueryStatus::Type QueryStatus)
+void ASGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
 {
 	if (QueryStatus != EEnvQueryStatus::Success)
 	{
@@ -230,8 +228,7 @@ void ASGameModeBase::RespawnPlayerElapsed(AController* Controller)
 
 void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 {
-	UE_LOG(LogTemp, Log, TEXT("OnActorKilled: Victim: %s, Killer: %s"), *GetNameSafe(VictimActor),
-	       *GetNameSafe(Killer));
+	UE_LOG(LogTemp, Log, TEXT("OnActorKilled: Victim: %s, Killer: %s"), *GetNameSafe(VictimActor), *GetNameSafe(Killer));
 
 	// Respawn Players after delay
 	ASCharacter* Player = Cast<ASCharacter>(VictimActor);
@@ -245,13 +242,14 @@ void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 		GetWorldTimerManager().SetTimer(TimerHandle_RespawnDelay, Delegate, RespawnDelay, false);
 	}
 
-
 	// Give Credits for kill
 	APawn* KillerPawn = Cast<APawn>(Killer);
-	if (KillerPawn)
+	// Don't credit kills of self
+	if (KillerPawn && KillerPawn != VictimActor)
 	{
+		// Only Players will have a 'PlayerState' instance, bots have nullptr
 		ASPlayerState* PS = KillerPawn->GetPlayerState<ASPlayerState>();
-		if (PS)
+		if (PS) 
 		{
 			PS->AddCredits(CreditsPerKill);
 		}
@@ -261,21 +259,24 @@ void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 
 void ASGameModeBase::WriteSaveGame()
 {
+	// Iterate all player states, we don't have proper ID to match yet (requires Steam or EOS)
 	for (int32 i = 0; i < GameState->PlayerArray.Num(); i++)
 	{
 		ASPlayerState* PS = Cast<ASPlayerState>(GameState->PlayerArray[i]);
 		if (PS)
 		{
 			PS->SavePlayerState(CurrentSaveGame);
-			break;
+			break; // single player only at this point
 		}
 	}
 
 	CurrentSaveGame->SavedActors.Empty();
 
+	// Iterate the entire world of actors
 	for (FActorIterator It(GetWorld()); It; ++It)
 	{
 		AActor* Actor = *It;
+		// Only interested in our 'gameplay actors'
 		if (!Actor->Implements<USGameplayInterface>())
 		{
 			continue;
@@ -284,11 +285,14 @@ void ASGameModeBase::WriteSaveGame()
 		FActorSaveData ActorData;
 		ActorData.ActorName = Actor->GetName();
 		ActorData.Transform = Actor->GetActorTransform();
-
+		
+		// Pass the array to fill with data from Actor
 		FMemoryWriter MemWriter(ActorData.ByteData);
-		FObjectAndNameAsStringProxyArchive Ar(MemWriter, true);
-		Ar.ArIsSaveGame = true;
 
+		FObjectAndNameAsStringProxyArchive Ar(MemWriter, true);
+		// Find only variables with UPROPERTY(SaveGame)
+		Ar.ArIsSaveGame = true;
+		// Converts Actor's SaveGame UPROPERTIES into binary array
 		Actor->Serialize(Ar);
 
 		CurrentSaveGame->SavedActors.Add(ActorData);
@@ -296,6 +300,7 @@ void ASGameModeBase::WriteSaveGame()
 
 	UGameplayStatics::SaveGameToSlot(CurrentSaveGame, SlotName, 0);
 }
+
 
 void ASGameModeBase::LoadSaveGame()
 {
@@ -308,11 +313,14 @@ void ASGameModeBase::LoadSaveGame()
 			return;
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("Loaded SaveGame Data."));
+		UE_LOG(LogTemp, Log, TEXT("Loaded SaveGame Data."));
 
+
+		// Iterate the entire world of actors
 		for (FActorIterator It(GetWorld()); It; ++It)
 		{
 			AActor* Actor = *It;
+			// Only interested in our 'gameplay actors'
 			if (!Actor->Implements<USGameplayInterface>())
 			{
 				continue;
@@ -325,13 +333,14 @@ void ASGameModeBase::LoadSaveGame()
 					Actor->SetActorTransform(ActorData.Transform);
 
 					FMemoryReader MemReader(ActorData.ByteData);
+
 					FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
 					Ar.ArIsSaveGame = true;
-
+					// Convert binary array back into actor's variables
 					Actor->Serialize(Ar);
 
 					ISGameplayInterface::Execute_OnActorLoaded(Actor);
-					
+
 					break;
 				}
 			}
@@ -340,6 +349,7 @@ void ASGameModeBase::LoadSaveGame()
 	else
 	{
 		CurrentSaveGame = Cast<USSaveGame>(UGameplayStatics::CreateSaveGameObject(USSaveGame::StaticClass()));
-		UE_LOG(LogTemp, Warning, TEXT("Created SaveGame Data."));
+
+		UE_LOG(LogTemp, Log, TEXT("Created New SaveGame Data."));
 	}
 }

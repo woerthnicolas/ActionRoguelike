@@ -21,7 +21,7 @@ public:
 
 	void Interact_Implementation(APawn* InstigatorPawn);
 
-	void OnActorLoaded_Implementation() override;
+	void OnActorLoaded_Implementation();
 
 protected:
 

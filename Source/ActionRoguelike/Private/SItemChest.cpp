@@ -28,6 +28,7 @@ void ASItemChest::Interact_Implementation(APawn* InstigatorPawn)
 
 }
 
+
 void ASItemChest::OnActorLoaded_Implementation()
 {
 	OnRep_LidOpened();
