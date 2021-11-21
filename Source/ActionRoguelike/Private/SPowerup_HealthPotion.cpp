@@ -8,7 +8,7 @@
 
 
 
-
+#define LOCTEXT_NAMESPACE "InteractableActors"
 
 ASPowerup_HealthPotion::ASPowerup_HealthPotion()
 {
@@ -37,3 +37,16 @@ void ASPowerup_HealthPotion::Interact_Implementation(APawn* InstigatorPawn)
 		}
 	}
 }
+
+FText ASPowerup_HealthPotion::GetInteractText_Implementation(APawn* InstigatorPawn)
+{
+	USAttributeComponent* ActionComp = USAttributeComponent::GetAttributes(InstigatorPawn);
+	if(ActionComp && ActionComp->IsFullHealth())
+	{
+		return LOCTEXT("HealthPotion_FullHealthWarning", "Already at full health.");
+	}
+
+	return FText::Format(LOCTEXT("HealthPotion_InteractMessage", "Cost {0} Credits. Restores Health to maximum."), CreditCost);
+}
+
+#undef LOCTEXT_NAMESPACE
