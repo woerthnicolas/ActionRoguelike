@@ -8,7 +8,7 @@
 #include "SAction.generated.h"
 
 class UWorld;
-
+class USActionComponent;
 
 USTRUCT()
 struct FActionRepData
@@ -34,6 +34,9 @@ class ACTIONROGUELIKE_API USAction : public UObject
 	GENERATED_BODY()
 
 protected:
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	UTexture2D* Icon;
 
 	UPROPERTY(Replicated)
 	USActionComponent* ActionComp;
