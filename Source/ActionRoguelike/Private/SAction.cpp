@@ -3,6 +3,7 @@
 
 #include "SAction.h"
 #include "SActionComponent.h"
+#include "../../../../../../Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Tools/MSVC/14.29.30133/include/chrono"
 #include "Net/UnrealNetwork.h"
 
 
@@ -40,6 +41,8 @@ void USAction::StartAction_Implementation(AActor* Instigator)
 
 	RepData.bIsRunning = true;
 	RepData.Instigator = Instigator;
+
+	TimeStarted = GetWorld()->TimeSeconds;
 
 	GetOwningComponent()->OnActionStarted.Broadcast(GetOwningComponent(), this);
 }
@@ -101,7 +104,6 @@ bool USAction::IsRunning() const
 {
 	return RepData.bIsRunning;
 }
-
 
 void USAction::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
