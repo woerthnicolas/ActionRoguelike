@@ -9,6 +9,7 @@
 #include "SAttributeComponent.h"
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
+#include "SActionComponent.h"
 #include "SCharacter.h"
 #include "SPlayerState.h"
 #include "SSaveGame.h"
@@ -16,11 +17,12 @@
 #include "GameFramework/GameStateBase.h"
 #include "SGameplayInterface.h"
 #include "SMonsterData.h"
+#include "ActionRoguelike/ActionRoguelike.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 
 // Disabled by default while working on multiplayer...
-static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), false, TEXT("Enable spawning of bots via timer."), ECVF_Cheat);
+static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), true, TEXT("Enable spawning of bots via timer."), ECVF_Cheat);
 
 
 
@@ -156,7 +158,20 @@ void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper*
 			int32 RandomIndex = FMath::RandRange(0, Rows.Num() -1);
 			FMonsterInfoRow* SelectedRow = Rows[RandomIndex];
 			
-			GetWorld()->SpawnActor<AActor>(SelectedRow->MonsterData->MonsterClass, Locations[0], FRotator::ZeroRotator);
+			AActor* NewBot = GetWorld()->SpawnActor<AActor>(SelectedRow->MonsterData->MonsterClass, Locations[0], FRotator::ZeroRotator);
+			if(NewBot)
+			{
+				LogOnScreen(this, FString::Printf(TEXT("Spawned enemy: %s (%s)"), *GetNameSafe(NewBot), *GetNameSafe(SelectedRow->MonsterData)));
+
+				USActionComponent* ActionComp = Cast<USActionComponent>(NewBot->GetComponentByClass(USActionComponent::StaticClass()));
+				if(ActionComp)
+				{
+					for(TSubclassOf<USAction> ActionClass : SelectedRow->MonsterData->Actions)
+					{
+						ActionComp->AddAction(NewBot, ActionClass);
+					}
+				}
+			}
 		}
 		// Track all the used spawn locations
 		// DrawDebugSphere(GetWorld(), Locations[0], 50.0f, 20, FColor::Blue, false, 60.0f);
