@@ -8,7 +8,6 @@
 #include "AI/SAICharacter.h"
 #include "SAttributeComponent.h"
 #include "EngineUtils.h"
-#include "DrawDebugHelpers.h"
 #include "SActionComponent.h"
 #include "SCharacter.h"
 #include "SPlayerState.h"
@@ -18,12 +17,13 @@
 #include "SGameplayInterface.h"
 #include "SMonsterData.h"
 #include "ActionRoguelike/ActionRoguelike.h"
+#include "Engine/AssetManager.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 
 // Disabled by default while working on multiplayer...
-static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), true, TEXT("Enable spawning of bots via timer."), ECVF_Cheat);
-
+static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), true, TEXT("Enable spawning of bots via timer."),
+                                                ECVF_Cheat);
 
 
 ASGameModeBase::ASGameModeBase()
@@ -54,13 +54,15 @@ void ASGameModeBase::StartPlay()
 
 	// Continuous timer to spawn in more bots.
 	// Actual amount of bots and whether its allowed to spawn determined by spawn logic later in the chain...
-	GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &ASGameModeBase::SpawnBotTimerElapsed, SpawnTimerInterval, true);
+	GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &ASGameModeBase::SpawnBotTimerElapsed,
+	                                SpawnTimerInterval, true);
 
 	// Make sure we have assigned at least one power-up class
 	if (ensure(PowerupClasses.Num() > 0))
 	{
 		// Run EQS to find potential power-up spawn locations
-		UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(this, PowerupSpawnQuery, this, EEnvQueryRunMode::AllMatching, nullptr);
+		UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(
+			this, PowerupSpawnQuery, this, EEnvQueryRunMode::AllMatching, nullptr);
 		if (ensure(QueryInstance))
 		{
 			QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &ASGameModeBase::OnPowerupSpawnQueryCompleted);
@@ -131,7 +133,8 @@ void ASGameModeBase::SpawnBotTimerElapsed()
 		return;
 	}
 
-	UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(this, SpawnBotQuery, this, EEnvQueryRunMode::RandomBest5Pct, nullptr);
+	UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(
+		this, SpawnBotQuery, this, EEnvQueryRunMode::RandomBest5Pct, nullptr);
 	if (ensure(QueryInstance))
 	{
 		QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &ASGameModeBase::OnBotSpawnQueryCompleted);
@@ -139,7 +142,8 @@ void ASGameModeBase::SpawnBotTimerElapsed()
 }
 
 
-void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
+void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance,
+                                              EEnvQueryStatus::Type QueryStatus)
 {
 	if (QueryStatus != EEnvQueryStatus::Success)
 	{
@@ -150,27 +154,27 @@ void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper*
 	TArray<FVector> Locations = QueryInstance->GetResultsAsLocations();
 	if (Locations.IsValidIndex(0))
 	{
-		if(MonsterTable)
+		if (MonsterTable)
 		{
 			TArray<FMonsterInfoRow*> Rows;
 			MonsterTable->GetAllRows("", Rows);
 
-			int32 RandomIndex = FMath::RandRange(0, Rows.Num() -1);
+			int32 RandomIndex = FMath::RandRange(0, Rows.Num() - 1);
 			FMonsterInfoRow* SelectedRow = Rows[RandomIndex];
-			
-			AActor* NewBot = GetWorld()->SpawnActor<AActor>(SelectedRow->MonsterData->MonsterClass, Locations[0], FRotator::ZeroRotator);
-			if(NewBot)
-			{
-				LogOnScreen(this, FString::Printf(TEXT("Spawned enemy: %s (%s)"), *GetNameSafe(NewBot), *GetNameSafe(SelectedRow->MonsterData)));
 
-				USActionComponent* ActionComp = Cast<USActionComponent>(NewBot->GetComponentByClass(USActionComponent::StaticClass()));
-				if(ActionComp)
-				{
-					for(TSubclassOf<USAction> ActionClass : SelectedRow->MonsterData->Actions)
-					{
-						ActionComp->AddAction(NewBot, ActionClass);
-					}
-				}
+			UAssetManager* Manager = UAssetManager::GetIfValid();
+			if (Manager)
+			{
+				LogOnScreen(this, "Loading monster...", FColor::Green);
+				
+				TArray<FName> Bundles;
+				FStreamableDelegate Delegate = FStreamableDelegate::CreateUObject
+				(this, &ASGameModeBase::OnMonsterLoaded,
+				 SelectedRow->MonsterId,
+				 Locations[0]
+				);
+
+				Manager->LoadPrimaryAsset(SelectedRow->MonsterId, Bundles, Delegate);
 			}
 		}
 		// Track all the used spawn locations
@@ -178,8 +182,39 @@ void ASGameModeBase::OnBotSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper*
 	}
 }
 
+void ASGameModeBase::OnMonsterLoaded(FPrimaryAssetId LoadedId, FVector SpawnLocation)
+{
+	LogOnScreen(this, "Finished loading monster.", FColor::Green);
+	
+	UAssetManager* Manager = UAssetManager::GetIfValid();
+	if (Manager)
+	{
+		USMonsterData* MonsterData = Cast<USMonsterData>(Manager->GetPrimaryAssetObject(LoadedId));
+		if (MonsterData)
+		{
+			AActor* NewBot = GetWorld()->SpawnActor<AActor>(MonsterData->MonsterClass, SpawnLocation,
+			                                                FRotator::ZeroRotator);
+			if (NewBot)
+			{
+				LogOnScreen(this, FString::Printf(TEXT("Spawned enemy: %s (%s)"), *GetNameSafe(NewBot),
+				                                  *GetNameSafe(MonsterData)));
 
-void ASGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
+				USActionComponent* ActionComp = Cast<USActionComponent>(
+					NewBot->GetComponentByClass(USActionComponent::StaticClass()));
+				if (ActionComp)
+				{
+					for (TSubclassOf<USAction> ActionClass : MonsterData->Actions)
+					{
+						ActionComp->AddAction(NewBot, ActionClass);
+					}
+				}
+			}
+		}
+	}
+}
+
+void ASGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance,
+                                                  EEnvQueryStatus::Type QueryStatus)
 {
 	if (QueryStatus != EEnvQueryStatus::Success)
 	{
@@ -252,7 +287,8 @@ void ASGameModeBase::RespawnPlayerElapsed(AController* Controller)
 
 void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 {
-	UE_LOG(LogTemp, Log, TEXT("OnActorKilled: Victim: %s, Killer: %s"), *GetNameSafe(VictimActor), *GetNameSafe(Killer));
+	UE_LOG(LogTemp, Log, TEXT("OnActorKilled: Victim: %s, Killer: %s"), *GetNameSafe(VictimActor),
+	       *GetNameSafe(Killer));
 
 	// Respawn Players after delay
 	ASCharacter* Player = Cast<ASCharacter>(VictimActor);
@@ -273,7 +309,7 @@ void ASGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 	{
 		// Only Players will have a 'PlayerState' instance, bots have nullptr
 		ASPlayerState* PS = KillerPawn->GetPlayerState<ASPlayerState>();
-		if (PS) 
+		if (PS)
 		{
 			PS->AddCredits(CreditsPerKill);
 		}
@@ -309,7 +345,7 @@ void ASGameModeBase::WriteSaveGame()
 		FActorSaveData ActorData;
 		ActorData.ActorName = Actor->GetName();
 		ActorData.Transform = Actor->GetActorTransform();
-		
+
 		// Pass the array to fill with data from Actor
 		FMemoryWriter MemWriter(ActorData.ByteData);
 
